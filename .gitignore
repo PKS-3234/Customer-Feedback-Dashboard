@@ -1,0 +1,48 @@
+# Environment configuration
+.env
+*.env.local
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor Directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python / AI Service
+ai-service/__pycache__/
+ai-service/*/__pycache__/
+ai-service/*/*/__pycache__/
+ai-service/*/*/*/__pycache__/
+ai-service/.pytest_cache/
+ai-service/.venv/
+ai-service/venv/
+ai-service/ENV/
+ai-service/env/
+ai-service/*.egg-info/
+ai-service/.coverage
+ai-service/htmlcov/
+
+# Java / Spring Boot
+backend-spring/target/
+backend-spring/*.jar
+backend-spring/*.war
+backend-spring/.mvn/timing.properties
+backend-spring/.classpath
+backend-spring/.project
+backend-spring/.settings/
+
+# Node / Angular
+frontend-angular/node_modules/
+frontend-angular/dist/
+frontend-angular/.angular/
+frontend-angular/coverage/
+frontend-angular/*.log
+
+# Logs & Temporary Files
+logs/
+*.log
+tmp/

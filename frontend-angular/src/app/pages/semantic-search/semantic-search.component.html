@@ -1,0 +1,159 @@
+<div class="search-page-container">
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="subtitle-badge">PGVector + Gemini Embeddings</div>
+      <h2>Semantic Customer Feedback Search</h2>
+      <p class="description">
+        Query feedback by natural meaning using cosine similarity and HNSW vector indexing.
+      </p>
+    </div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="search-box-card">
+    <div class="search-input-group">
+      <div class="input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search customer sentiment, issues, or experiences (e.g., 'advisor appointment delay')..."
+          class="search-input"
+          [disabled]="isSearching"
+        />
+        @if (searchQuery) {
+          <button class="btn-clear" (click)="clearSearch()" type="button" title="Clear">✕</button>
+        }
+      </div>
+
+      <div class="limit-selector">
+        <label for="limitSelect">Limit:</label>
+        <select id="limitSelect" [(ngModel)]="limit" [disabled]="isSearching" class="limit-dropdown">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+        </select>
+      </div>
+
+      <button
+        class="btn-search"
+        (click)="onSearch()"
+        [disabled]="isSearching || !searchQuery.trim()"
+      >
+        @if (isSearching) {
+          <span class="spinner-small"></span> Searching...
+        } @else {
+          Search
+        }
+      </button>
+    </div>
+
+    <!-- Suggested Queries -->
+    <div class="suggestions-wrapper">
+      <span class="suggestions-label">Suggestions:</span>
+      <div class="suggestion-chips">
+        @for (query of suggestedQueries; track query) {
+          <button
+            type="button"
+            class="chip-button"
+            (click)="selectSuggestion(query)"
+            [disabled]="isSearching"
+          >
+            {{ query }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  @if (errorMessage) {
+    <div class="alert-box alert-error">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-content">
+        <strong>Search Failed:</strong> {{ errorMessage }}
+      </div>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isSearching) {
+    <div class="state-card loading-state">
+      <div class="spinner-large"></div>
+      <h3>Generating Query Embedding & Querying PGVector...</h3>
+      <p>Converting '{{ searchQuery }}' to 768-dim vector via Gemini and calculating cosine similarity.</p>
+    </div>
+  }
+
+  <!-- Empty Initial State -->
+  @if (!isSearching && !hasSearched) {
+    <div class="state-card empty-initial-state">
+      <div class="empty-icon">🎯</div>
+      <h3>Ready for Semantic Search</h3>
+      <p>Enter natural phrases or click one of the suggested keywords above to find relevant feedback.</p>
+    </div>
+  }
+
+  <!-- No Results Found -->
+  @if (!isSearching && hasSearched && results.length === 0 && !errorMessage) {
+    <div class="state-card no-results-state">
+      <div class="empty-icon">📂</div>
+      <h3>No Feedback Records Match Query</h3>
+      <p>No feedback records with embeddings closely matched '{{ lastExecutedQuery }}'.</p>
+    </div>
+  }
+
+  <!-- Results List -->
+  @if (!isSearching && results.length > 0) {
+    <div class="results-container">
+      <div class="results-header">
+        <h3>Found {{ results.length }} Matches</h3>
+        <span class="results-subtext">Sorted by highest cosine similarity first</span>
+      </div>
+
+      <div class="results-grid">
+        @for (item of results; track item.feedbackId; let i = $index) {
+          <div class="result-card">
+            <div class="card-header">
+              <div class="rank-badge">#{{ i + 1 }}</div>
+              <div class="similarity-score-box">
+                <span class="score-label">Similarity</span>
+                <span class="score-value">{{ getSimilarityPercentage(item.similarity) }}</span>
+                <div class="progress-bar-bg">
+                  <div
+                    class="progress-bar-fill"
+                    [style.width.%]="item.similarity * 100"
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <p class="feedback-text">"{{ item.feedbackText }}"</p>
+
+              <div class="meta-pills">
+                <span class="badge badge-sentiment" [ngClass]="getSentimentClass(item.sentiment)">
+                  {{ item.sentiment }}
+                </span>
+                <span class="badge badge-priority" [ngClass]="getPriorityClass(item.priority)">
+                  {{ item.priority }}
+                </span>
+                <span class="badge badge-category">
+                  {{ item.category }}
+                </span>
+                <span class="badge badge-theme">
+                  {{ item.theme }}
+                </span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <span class="feedback-id-tag">ID: {{ item.feedbackId }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

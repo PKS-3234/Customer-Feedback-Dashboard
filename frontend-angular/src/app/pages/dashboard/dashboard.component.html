@@ -1,0 +1,401 @@
+<div class="dashboard-page">
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="title-row">
+        <h1 class="page-title">Executive Intelligence Dashboard</h1>
+        <span class="badge-phase">Phase 6 Operational</span>
+      </div>
+      <p class="page-subtitle">
+        Real-time telemetry and aggregated insights across ingestion, Gemini analysis, PGVector embeddings, and bounded multi-agent workflows.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="isLoading">
+        <span class="btn-icon">🔄</span> Refresh Telemetry
+      </button>
+      <a routerLink="/copilot" class="btn btn-primary">
+        <span class="btn-icon">🤖</span> Multi-Agent Copilot
+      </a>
+    </div>
+  </header>
+
+  <!-- Loading & Error States -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading platform telemetry and metrics...</p>
+  </div>
+
+  <div *ngIf="errorMessage && !isLoading" class="error-banner">
+    <span class="error-icon">⚠️</span>
+    <span class="error-text">{{ errorMessage }}</span>
+    <button class="btn btn-sm btn-secondary" (click)="refresh()">Retry</button>
+  </div>
+
+  <div *ngIf="!isLoading && dashboardData" class="dashboard-content">
+    <!-- 1. Key Metrics Grid (8 KPI cards) -->
+    <section class="metrics-section">
+      <h2 class="section-title">Key Performance Indicators</h2>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Total Feedback Records</span>
+            <span class="metric-icon">📑</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.totalFeedbackRecords | number }}</div>
+          <div class="metric-footer">Stored in database</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Total Analyzed</span>
+            <span class="metric-icon">🧠</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.totalAnalyzedRecords | number }}</div>
+          <div class="metric-footer">Active Gemini analyses</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Total Embedded</span>
+            <span class="metric-icon">📐</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.totalEmbeddedRecords | number }}</div>
+          <div class="metric-footer">768-dim PGVector embeddings</div>
+        </div>
+
+        <div class="metric-card metric-positive">
+          <div class="metric-header">
+            <span class="metric-label">Positive Feedback %</span>
+            <span class="metric-icon">👍</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.positiveFeedbackPercent }}%</div>
+          <div class="metric-footer">Of analyzed customer records</div>
+        </div>
+
+        <div class="metric-card metric-negative">
+          <div class="metric-header">
+            <span class="metric-label">Negative Feedback %</span>
+            <span class="metric-icon">👎</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.negativeFeedbackPercent }}%</div>
+          <div class="metric-footer">Identified areas for action</div>
+        </div>
+
+        <div class="metric-card metric-alert">
+          <div class="metric-header">
+            <span class="metric-label">High Priority Feedback</span>
+            <span class="metric-icon">🚨</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.highPriorityFeedbackCount | number }}</div>
+          <div class="metric-footer">Requiring escalation</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-label">Current Batches</span>
+            <span class="metric-icon">📦</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.currentBatches | number }}</div>
+          <div class="metric-footer">Processed ingestion batches</div>
+        </div>
+
+        <div class="metric-card" [class.metric-warning]="dashboardData.keyMetrics.processingErrors > 0">
+          <div class="metric-header">
+            <span class="metric-label">Processing Errors</span>
+            <span class="metric-icon">⚠️</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.processingErrors | number }}</div>
+          <div class="metric-footer">Total captured row anomalies</div>
+        </div>
+
+        <div class="metric-card metric-alert" [class.metric-warning]="dashboardData.keyMetrics.failedRows > 0">
+          <div class="metric-header">
+            <span class="metric-label">Failed Rows</span>
+            <span class="metric-icon">❌</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.failedRows | number }}</div>
+          <div class="metric-footer">Validation & schema failures</div>
+        </div>
+
+        <div class="metric-card" [class.metric-warning]="dashboardData.keyMetrics.duplicateRows > 0">
+          <div class="metric-header">
+            <span class="metric-label">Duplicate Rows</span>
+            <span class="metric-icon">🔁</span>
+          </div>
+          <div class="metric-value">{{ dashboardData.keyMetrics.duplicateRows | number }}</div>
+          <div class="metric-footer">Deduplicated in ingestion</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Charts Section (6 Distributions) -->
+    <section class="charts-section">
+      <h2 class="section-title">Telemetry & Distribution Analysis</h2>
+      <div class="charts-grid">
+        <!-- Chart 1: Sentiment Distribution -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">1. Sentiment Distribution</h3>
+            <span class="chart-badge">Active Analyses</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.sentimentDistribution.length === 0" class="empty-chart">
+              No sentiment records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.sentimentDistribution" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name">
+                  <span class="badge" [ngClass]="getSentimentBadgeClass(item.label)">{{ item.label }}</span>
+                </span>
+                <span class="item-stats">{{ item.count }} records ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" [ngClass]="getSentimentBadgeClass(item.label)" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 2: Priority Distribution -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">2. Priority Distribution</h3>
+            <span class="chart-badge">Action Urgency</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.priorityDistribution.length === 0" class="empty-chart">
+              No priority records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.priorityDistribution" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name">
+                  <span class="badge" [ngClass]="getPriorityBadgeClass(item.label)">{{ item.label }}</span>
+                </span>
+                <span class="item-stats">{{ item.count }} records ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" [ngClass]="getPriorityBadgeClass(item.label)" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 3: Category Distribution -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">3. Category Distribution</h3>
+            <span class="chart-badge">Business Domain</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.categoryDistribution.length === 0" class="empty-chart">
+              No category records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.categoryDistribution" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name">{{ item.label }}</span>
+                <span class="item-stats">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-primary" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 4: Theme Distribution -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">4. Theme Distribution</h3>
+            <span class="chart-badge">Customer Topics</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.themeDistribution.length === 0" class="empty-chart">
+              No theme records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.themeDistribution" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name">{{ item.label }}</span>
+                <span class="item-stats">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-accent" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 5: Feedback By Channel -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">5. Feedback By Channel</h3>
+            <span class="chart-badge">Intake Channels</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.feedbackByChannel.length === 0" class="empty-chart">
+              No channel records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.feedbackByChannel" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name font-mono">{{ item.label }}</span>
+                <span class="item-stats">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-teal" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 6: Feedback By Product -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">6. Feedback By Product</h3>
+            <span class="chart-badge">Financial Products</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="dashboardData.charts.feedbackByProduct.length === 0" class="empty-chart">
+              No product records available.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.feedbackByProduct" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name">{{ item.label }}</span>
+                <span class="item-stats">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-indigo" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 7: Ingestion Error Breakdown Widget -->
+        <div class="chart-card error-widget-card">
+          <div class="chart-header">
+            <h3 class="chart-title">7. Ingestion Error Breakdown</h3>
+            <span class="chart-badge badge-warn">Data Quality</span>
+          </div>
+          <div class="chart-body">
+            <div *ngIf="!dashboardData.charts.errorDistribution || dashboardData.charts.errorDistribution.length === 0" class="empty-chart">
+              No processing errors recorded. Pipeline health is 100%.
+            </div>
+            <div *ngFor="let item of dashboardData.charts.errorDistribution" class="bar-row">
+              <div class="bar-labels">
+                <span class="item-name font-mono">{{ item.label }}</span>
+                <span class="item-stats">{{ item.count }} ({{ item.percentage }}%)</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-amber" [style.width.%]="item.percentage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Semantic Search & PGVector Status -->
+    <section class="status-section">
+      <div class="card status-card">
+        <div class="status-card-header">
+          <div class="status-title-group">
+            <span class="status-icon">📐</span>
+            <div>
+              <h2 class="section-title mb-0">Semantic Search & PGVector Telemetry</h2>
+              <p class="section-subtitle">Vector embedding status and database index configuration</p>
+            </div>
+          </div>
+          <a routerLink="/semantic-search" class="btn btn-outline btn-sm">
+            Launch Semantic Search &rarr;
+          </a>
+        </div>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Embedding Model:</span>
+            <span class="status-value font-mono">{{ dashboardData.semanticSearchStatus.embeddingModel }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Embedding Dimension:</span>
+            <span class="status-value font-mono">{{ dashboardData.semanticSearchStatus.embeddingDimension }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Total Embeddings:</span>
+            <span class="status-value font-bold">{{ dashboardData.semanticSearchStatus.totalEmbeddings | number }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Semantic Search Status:</span>
+            <span class="badge badge-success">{{ dashboardData.semanticSearchStatus.semanticSearchStatus }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">PGVector Status:</span>
+            <span class="badge badge-info">{{ dashboardData.semanticSearchStatus.pgvectorStatus }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Agent Status -->
+    <section class="agents-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="status-title-group">
+            <span class="status-icon">🤖</span>
+            <div>
+              <h2 class="section-title mb-0">Multi-Agent Subsystem Status</h2>
+              <p class="section-subtitle">Configured agents and operational telemetry</p>
+            </div>
+          </div>
+          <span class="badge badge-success">{{ agentsList.length }} Agents Configured</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Role & Purpose</th>
+                <th>Availability</th>
+                <th>Execution History</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let agent of agentsList">
+                <td class="agent-name font-bold">{{ agent.name }}</td>
+                <td class="agent-purpose">{{ agent.purpose }}</td>
+                <td>
+                  <span class="badge badge-success">{{ agent.availability }}</span>
+                </td>
+                <td class="agent-history text-muted">{{ agent.executionHistory }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Copilot Highlights -->
+    <section class="copilot-highlights-section">
+      <div class="copilot-card">
+        <div class="copilot-card-content">
+          <div class="copilot-header">
+            <div class="copilot-badge">Copilot Highlights</div>
+            <h2 class="copilot-title">Ask the Multi-Agent Copilot</h2>
+            <p class="copilot-desc">
+              Interact with the Supervisor, Analytics, Retrieval, and Data Quality agents to generate real-time executive reports grounded in customer feedback.
+            </p>
+          </div>
+          <div class="example-questions-grid">
+            <div *ngFor="let q of dashboardData.exampleQuestions" class="example-q-item" (click)="askInCopilot(q)">
+              <span class="example-q-icon">💬</span>
+              <span class="example-q-text">{{ q }}</span>
+              <span class="example-q-arrow">&rarr;</span>
+            </div>
+          </div>
+        </div>
+        <div class="copilot-card-footer">
+          <a routerLink="/copilot" class="btn btn-primary btn-lg">
+            Open Interactive Copilot &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

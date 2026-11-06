@@ -1,0 +1,163 @@
+<div class="upload-container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a routerLink="/data-operations/batches">Data Operations</a> / <span>Upload CSV</span>
+    </div>
+    <h1>CSV Feedback Ingestion</h1>
+    <p class="subtitle">Upload banking customer feedback CSV files with automatic header checks, duplicate detection, and schema validation.</p>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast toast-success" *ngIf="toastMessage">
+    <div class="toast-content">
+      <span class="icon">✓</span>
+      <span>{{ toastMessage }}</span>
+    </div>
+    <div class="toast-actions">
+      <a *ngIf="uploadResult" [routerLink]="['/data-operations/batches', uploadResult.batchId]" class="btn-link">View Batch Details →</a>
+    </div>
+  </div>
+
+  <!-- Error Notification -->
+  <div class="toast toast-error" *ngIf="errorMessage">
+    <span class="icon">✕</span>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Upload Zone -->
+  <div class="card upload-card" *ngIf="!uploadResult">
+    <div
+      class="dropzone"
+      [class.dragover]="isDragOver"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        type="file"
+        id="fileInput"
+        accept=".csv"
+        class="file-input"
+        (change)="onFileChange($event)"
+      />
+      <label for="fileInput" class="dropzone-label">
+        <div class="upload-icon">📄</div>
+        <div class="drop-text">Drag and drop your feedback CSV file here</div>
+        <div class="sub-text">or <span class="browse-link">browse files</span> from your computer</div>
+        <div class="file-hint">Supported format: CSV with headers (max 50MB)</div>
+      </label>
+    </div>
+
+    <div class="selected-file-bar" *ngIf="selectedFile">
+      <div class="file-info">
+        <span class="file-name">{{ selectedFile.name }}</span>
+        <span class="file-size">({{ (selectedFile.size / 1024).toFixed(1) }} KB)</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" (click)="resetForm()" [disabled]="isValidating || isUploading">Remove</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="card loading-card" *ngIf="isValidating || isUploading">
+    <div class="spinner"></div>
+    <div class="loading-label">{{ isValidating ? 'Validating CSV records & headers...' : 'Processing batch ingestion & detecting duplicates...' }}</div>
+  </div>
+
+  <!-- Validation Preview Card -->
+  <div class="card preview-card" *ngIf="validationResult && !uploadResult">
+    <div class="preview-header">
+      <h2>Validation Preview</h2>
+      <span class="badge" [ngClass]="validationResult.valid ? 'badge-success' : 'badge-warn'">
+        {{ validationResult.valid ? 'Ready to Ingest' : 'Errors Detected' }}
+      </span>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="metric-label">Total Rows</div>
+        <div class="metric-val">{{ validationResult.rowCount }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Valid Rows</div>
+        <div class="metric-val text-success">{{ validationResult.validRows }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Invalid Rows</div>
+        <div class="metric-val text-error">{{ validationResult.invalidRows }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Header Format</div>
+        <div class="metric-val">{{ validationResult.headerValidation ? 'Valid ✓' : 'Invalid ✕' }}</div>
+      </div>
+    </div>
+
+    <!-- Sample Errors Table -->
+    <div class="errors-preview" *ngIf="validationResult.sampleErrors.length > 0">
+      <h3>Sample Validation Errors ({{ validationResult.sampleErrors.length }} shown)</h3>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Field</th>
+              <th>Error Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let err of validationResult.sampleErrors">
+              <td><code>{{ err.rowNumber }}</code></td>
+              <td><code>{{ err.field }}</code></td>
+              <td>{{ err.message }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="preview-actions">
+      <button class="btn btn-secondary" (click)="resetForm()" [disabled]="isUploading">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmAndUpload()" [disabled]="isUploading">
+        {{ isUploading ? 'Ingesting...' : 'Confirm & Ingest Batch' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Ingestion Success Summary -->
+  <div class="card result-card" *ngIf="uploadResult">
+    <div class="result-header">
+      <h2>Ingestion Batch Complete</h2>
+      <span class="badge badge-success">{{ uploadResult.status }}</span>
+    </div>
+
+    <div class="result-meta">
+      <div><strong>Batch ID:</strong> <code>{{ uploadResult.batchId }}</code></div>
+      <div><strong>File Name:</strong> {{ uploadResult.sourceFileName }}</div>
+      <div><strong>File Hash:</strong> <code>{{ uploadResult.fileHash.substring(0, 16) }}...</code></div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="metric-label">Total Rows</div>
+        <div class="metric-val">{{ uploadResult.totalRows }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Stored Feedback</div>
+        <div class="metric-val text-success">{{ uploadResult.successfulRows }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Duplicate Rows</div>
+        <div class="metric-val text-warn">{{ uploadResult.duplicateRows }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Failed Rows</div>
+        <div class="metric-val text-error">{{ uploadResult.failedRows }}</div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-secondary" (click)="resetForm()">Upload Another File</button>
+      <a [routerLink]="['/data-operations/batches', uploadResult.batchId]" class="btn btn-primary">View Batch Details</a>
+      <a routerLink="/data-operations/batches" class="btn btn-outline">Go to Batch Monitor</a>
+    </div>
+  </div>
+</div>

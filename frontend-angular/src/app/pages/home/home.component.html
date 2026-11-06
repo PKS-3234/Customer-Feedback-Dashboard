@@ -1,0 +1,81 @@
+<div class="home-container">
+  <header class="hero-section">
+    <div class="badge">Phase 1: Infrastructure</div>
+    <h1 class="main-title">{{ title }}</h1>
+    <p class="subtitle">{{ subtitle }}</p>
+  </header>
+
+  <!-- System Health Card -->
+  <section class="card health-card">
+    <div class="card-header">
+      <h2>Backend Connectivity Status</h2>
+      <button class="refresh-btn" (click)="refreshHealth()" [disabled]="loadingHealth">
+        {{ loadingHealth ? 'Checking...' : 'Refresh Status' }}
+      </button>
+    </div>
+    <div class="health-content" *ngIf="backendHealth; else loadingTpl">
+      <div class="status-indicator" [ngClass]="backendHealth.status === 'UP' ? 'status-up' : 'status-warn'">
+        <span class="dot"></span>
+        <span class="status-text">Backend Status: <strong>{{ backendHealth.status }}</strong></span>
+      </div>
+      <div class="health-details">
+        <span>Service: <code>{{ backendHealth.service }}</code></span>
+        <span>Version: <code>{{ backendHealth.version }}</code></span>
+        <span>Timestamp: <code>{{ backendHealth.timestamp }}</code></span>
+      </div>
+    </div>
+    <ng-template #loadingTpl>
+      <div class="loading-state">Checking backend status at {{ apiBaseUrl }}...</div>
+    </ng-template>
+  </section>
+
+  <!-- Architecture Overview -->
+  <section class="card">
+    <h2>Enterprise Architecture Stack</h2>
+    <div class="grid-container">
+      <div class="layer-card" *ngFor="let layer of architectureLayers">
+        <div class="layer-header">
+          <span class="layer-name">{{ layer.name }}</span>
+          <span class="layer-port">Port: <code>{{ layer.port }}</code></span>
+        </div>
+        <div class="layer-tech">{{ layer.tech }}</div>
+        <div class="layer-role">{{ layer.role }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roadmap Status -->
+  <section class="card">
+    <h2>Project Delivery Roadmap</h2>
+    <div class="roadmap-list">
+      <div class="roadmap-item" *ngFor="let phase of roadmapPhases" [class.active-phase]="phase.id === 2">
+        <div class="phase-number">Phase {{ phase.id }}</div>
+        <div class="phase-name">{{ phase.name }}</div>
+        <div class="phase-status">{{ phase.status }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Config Endpoints -->
+  <section class="card">
+    <h2>Connected Endpoints Configuration</h2>
+    <div class="config-grid">
+      <div class="config-item">
+        <span class="config-label">Spring Boot Backend API:</span>
+        <code class="config-value">{{ apiBaseUrl }}</code>
+      </div>
+      <div class="config-item">
+        <span class="config-label">FastAPI AI Service:</span>
+        <code class="config-value">{{ aiServiceBaseUrl }}</code>
+      </div>
+      <div class="config-item">
+        <span class="config-label">Environment Mode:</span>
+        <code class="config-value">{{ isProduction ? 'Production' : 'Development' }}</code>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer-note">
+    <p>Customer Feedback Intelligence Platform • Phase 1 Infrastructure Foundation • Strict Phase Discipline Followed</p>
+  </footer>
+</div>

@@ -1,0 +1,169 @@
+<div class="copilot-container">
+  <!-- Page Header -->
+  <header class="copilot-header">
+    <div class="header-content">
+      <div class="title-with-badge">
+        <h1 class="page-title">Enterprise Feedback Copilot</h1>
+        <span class="phase-badge">Phase 7 LangGraph</span>
+      </div>
+      <p class="subtitle">
+        Bounded multi-agent workflow orchestrated by LangGraph StateGraph. Combines analytical distributions, PGVector semantic retrieval, and ingestion quality telemetry into evidence-grounded reports.
+      </p>
+    </div>
+  </header>
+
+  <!-- Query Input Section -->
+  <div class="query-box card">
+    <div class="input-row">
+      <div class="input-wrapper">
+        <span class="copilot-icon">🤖</span>
+        <input
+          type="text"
+          [(ngModel)]="query"
+          (keyup.enter)="ask()"
+          placeholder="Ask a question (e.g., 'What are customers unhappy about?')..."
+          class="copilot-input"
+          [disabled]="isLoading"
+        />
+        @if (query) {
+          <button class="btn-clear" (click)="clear()" type="button" title="Clear">✕</button>
+        }
+      </div>
+
+      <button
+        class="btn-ask"
+        (click)="ask()"
+        [disabled]="isLoading || !query.trim()"
+      >
+        @if (isLoading) {
+          <span class="spinner-small"></span> Orchestrating...
+        } @else {
+          Ask Copilot
+        }
+      </button>
+    </div>
+
+    <!-- Example Questions -->
+    <div class="examples-row">
+      <span class="examples-label">Try asking:</span>
+      <div class="example-chips">
+        @for (q of exampleQuestions; track q) {
+          <button
+            class="chip"
+            type="button"
+            (click)="selectExample(q)"
+            [disabled]="isLoading"
+          >
+            {{ q }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  @if (errorMessage) {
+    <div class="alert-box alert-error">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-content">
+        <strong>Copilot Query Failed:</strong> {{ errorMessage }}
+      </div>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="state-card loading-state">
+      <div class="spinner-large"></div>
+      <h3>LangGraph StateGraph Workflow In Progress...</h3>
+      <p>Routing query to specialist nodes, executing PGVector and analytical queries, and synchronizing at reporting node.</p>
+    </div>
+  }
+
+  <!-- Initial Idle State -->
+  @if (!isLoading && !hasQueried) {
+    <div class="state-card idle-state">
+      <div class="empty-icon">💡</div>
+      <h3>Enterprise Feedback Intelligence Copilot</h3>
+      <p>Ask a question or select one of the suggested prompts above to execute the LangGraph StateGraph workflow.</p>
+    </div>
+  }
+
+  <!-- Copilot Response -->
+  @if (!isLoading && response) {
+    <div class="response-container">
+      <!-- Agents Execution Pipeline Header -->
+      <div class="agents-used-bar">
+        <div class="agents-row">
+          <span class="agents-label">Agents Activated:</span>
+          <div class="agent-pills">
+            @for (agent of response.agentsUsed; track agent) {
+              <span class="agent-pill active-agent-pill">{{ agent }}</span>
+            }
+          </div>
+        </div>
+
+        @if (response.executionPath && response.executionPath.length) {
+          <div class="execution-flow">
+            <span class="flow-label">LangGraph Flow:</span>
+            <div class="flow-nodes">
+              @for (node of response.executionPath; track $index; let last = $last) {
+                <span class="flow-node">{{ node }}</span>
+                @if (!last) {
+                  <span class="flow-arrow">&rarr;</span>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Synthesized Answer Card -->
+      <div class="answer-card">
+        <div class="card-header">
+          <div class="header-left">
+            <span class="answer-icon">📄</span>
+            <h3>Executive Synthesis</h3>
+          </div>
+          <span class="grounding-badge">Evidence-Grounded</span>
+        </div>
+
+        <div class="answer-body">
+          <div class="answer-content">
+            {{ response.answer }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Supporting Evidence Section -->
+      <div class="evidence-section">
+        <div class="evidence-header">
+          <h3>Supporting Evidence ({{ response.supportingEvidence.length }} records)</h3>
+          <button class="btn-toggle-evidence" (click)="toggleRawEvidence()">
+            {{ showRawEvidence ? 'Hide Structured Evidence' : 'Show Structured Evidence' }}
+          </button>
+        </div>
+
+        @if (showRawEvidence) {
+          <div class="evidence-list">
+            @for (item of response.supportingEvidence; track $index) {
+              <div class="evidence-card card">
+                <div class="evidence-card-header">
+                  <span class="evidence-agent">{{ item.agent }}</span>
+                  <span class="evidence-type">{{ item.type }}</span>
+                </div>
+                <div class="evidence-summary">
+                  {{ item.summary }}
+                </div>
+                <details class="evidence-details">
+                  <summary>View Raw JSON Payload</summary>
+                  <pre class="evidence-json">{{ item.data | json }}</pre>
+                </details>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

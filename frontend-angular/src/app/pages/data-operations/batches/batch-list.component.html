@@ -1,0 +1,95 @@
+<div class="batches-container">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="breadcrumbs">
+        <span>Data Operations</span> / <span>Batch Monitor</span>
+      </div>
+      <h1>Ingestion Batch Monitor</h1>
+      <p class="subtitle">Monitor operational CSV ingestion pipelines, track record counts, and inspect processing errors.</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/data-operations/upload" class="btn btn-primary">+ Upload New CSV</a>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <span>✕ {{ errorMessage }}</span>
+    <button class="btn btn-sm btn-secondary" (click)="loadBatches(currentPage)">Retry</button>
+  </div>
+
+  <!-- Main Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Ingestion History</h2>
+      <div class="batch-count" *ngIf="!isLoading">Total Batches: <strong>{{ totalElements }}</strong></div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <div>Loading batches...</div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading && batches.length === 0">
+      <div class="empty-icon">📂</div>
+      <h3>No Ingestion Batches Yet</h3>
+      <p>Upload your first banking customer feedback CSV file to begin ingestion.</p>
+      <a routerLink="/data-operations/upload" class="btn btn-primary">Upload CSV File</a>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="!isLoading && batches.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Batch ID</th>
+            <th>File Name</th>
+            <th>Status</th>
+            <th class="text-right">Total</th>
+            <th class="text-right">Success</th>
+            <th class="text-right">Duplicates</th>
+            <th class="text-right">Failed</th>
+            <th>Created At</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of batches">
+            <td>
+              <a [routerLink]="['/data-operations/batches', b.batchId]" class="batch-id-link">
+                {{ b.batchId.substring(0, 8) }}...
+              </a>
+            </td>
+            <td class="font-medium">{{ b.sourceFileName }}</td>
+            <td>
+              <span class="badge" [ngClass]="getStatusClass(b.status)">{{ b.status }}</span>
+            </td>
+            <td class="text-right font-mono">{{ b.totalRows }}</td>
+            <td class="text-right font-mono text-success">{{ b.successfulRows }}</td>
+            <td class="text-right font-mono text-warn">{{ b.duplicateRows }}</td>
+            <td class="text-right font-mono text-error">{{ b.failedRows }}</td>
+            <td class="text-muted">{{ b.createdAt | date:'short' }}</td>
+            <td class="text-center">
+              <a [routerLink]="['/data-operations/batches', b.batchId]" class="btn btn-sm btn-outline">
+                View Details
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" *ngIf="!isLoading && totalPages > 1">
+      <button class="btn btn-sm btn-secondary" (click)="goToPreviousPage()" [disabled]="currentPage === 0">
+        ← Previous
+      </button>
+      <span class="page-indicator">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+      <button class="btn btn-sm btn-secondary" (click)="goToNextPage()" [disabled]="currentPage >= totalPages - 1">
+        Next →
+      </button>
+    </div>
+  </div>
+</div>

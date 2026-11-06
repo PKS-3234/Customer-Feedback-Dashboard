@@ -1,0 +1,189 @@
+<div class="batch-detail-container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <a routerLink="/data-operations/batches">Batch Monitor</a> / <span>Batch Details</span>
+    </div>
+    <div class="header-content">
+      <div>
+        <h1>Batch Overview</h1>
+        <p class="subtitle" *ngIf="batch">{{ batch.sourceFileName }} (ID: <code>{{ batch.batchId }}</code>)</p>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/data-operations/batches" class="btn btn-secondary">← Back to Batches</a>
+        <a routerLink="/data-operations/upload" class="btn btn-primary">+ Upload New File</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="card loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <div>Loading batch details...</div>
+  </div>
+
+  <!-- Error State -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <span>✕ {{ errorMessage }}</span>
+    <button class="btn btn-sm btn-secondary" (click)="loadBatchDetails()">Retry</button>
+  </div>
+
+  <div *ngIf="!isLoading && batch">
+    <!-- Summary Cards -->
+    <div class="card summary-card">
+      <div class="summary-top">
+        <div class="file-headline">
+          <h2>{{ batch.sourceFileName }}</h2>
+          <span class="badge" [ngClass]="getStatusClass(batch.status)">{{ batch.status }}</span>
+        </div>
+        <div class="meta-row">
+          <div><strong>Source:</strong> {{ batch.sourceSystem }}</div>
+          <div><strong>Uploaded By:</strong> {{ batch.uploadUser }}</div>
+          <div><strong>File Hash:</strong> <code>{{ batch.fileHash }}</code></div>
+          <div><strong>Created At:</strong> {{ batch.createdAt | date:'medium' }}</div>
+          <div *ngIf="batch.completedAt"><strong>Completed At:</strong> {{ batch.completedAt | date:'medium' }}</div>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-label">Total Rows</div>
+          <div class="metric-val">{{ batch.totalRows }}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Stored Feedback</div>
+          <div class="metric-val text-success">{{ batch.successfulRows }}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Duplicate Rows</div>
+          <div class="metric-val text-warn">{{ batch.duplicateRows }}</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Failed Rows</div>
+          <div class="metric-val text-error">{{ batch.failedRows }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="card tabs-card">
+      <div class="tabs-header">
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'errors'"
+          (click)="activeTab = 'errors'"
+        >
+          Processing Errors ({{ batch.failedRows + batch.duplicateRows }})
+        </button>
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'feedback'"
+          (click)="activeTab = 'feedback'"
+        >
+          Stored Feedback Records ({{ batch.successfulRows }})
+        </button>
+      </div>
+
+      <!-- Errors Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'errors'">
+        <div class="loading-state" *ngIf="loadingErrors">
+          <div class="spinner"></div>
+          <div>Loading processing errors...</div>
+        </div>
+
+        <div class="empty-state" *ngIf="!loadingErrors && errors.length === 0">
+          <div class="empty-icon">✓</div>
+          <h3>No Processing Errors</h3>
+          <p>All records in this batch were ingested successfully without validation errors.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="!loadingErrors && errors.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Row #</th>
+                <th>Error Type</th>
+                <th>Message</th>
+                <th>Raw Record</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let err of errors">
+                <td><code>{{ err.rowNumber || '-' }}</code></td>
+                <td><span class="badge badge-warn">{{ err.errorType }}</span></td>
+                <td class="font-medium text-error">{{ err.errorMessage }}</td>
+                <td class="font-mono text-muted">{{ err.rawRecord || '-' }}</td>
+                <td class="text-muted">{{ err.createdAt | date:'mediumTime' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar" *ngIf="!loadingErrors && errorsTotalPages > 1">
+          <button class="btn btn-sm btn-secondary" (click)="loadErrors(errorsPage - 1)" [disabled]="errorsPage === 0">
+            ← Previous
+          </button>
+          <span class="page-indicator">Page {{ errorsPage + 1 }} of {{ errorsTotalPages }} ({{ errorsTotalElements }} errors)</span>
+          <button class="btn btn-sm btn-secondary" (click)="loadErrors(errorsPage + 1)" [disabled]="errorsPage >= errorsTotalPages - 1">
+            Next →
+          </button>
+        </div>
+      </div>
+
+      <!-- Stored Feedback Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'feedback'">
+        <div class="loading-state" *ngIf="loadingFeedback">
+          <div class="spinner"></div>
+          <div>Loading stored feedback...</div>
+        </div>
+
+        <div class="empty-state" *ngIf="!loadingFeedback && feedbackList.length === 0">
+          <div class="empty-icon">📝</div>
+          <h3>No Feedback Records Stored</h3>
+          <p>No successful feedback records were stored for this batch.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="!loadingFeedback && feedbackList.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Row #</th>
+                <th>Date</th>
+                <th>Channel</th>
+                <th>Product</th>
+                <th>Rating</th>
+                <th>Feedback Text</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of feedbackList">
+                <td><code>{{ f.originalRowNumber }}</code></td>
+                <td>{{ f.feedbackDate }}</td>
+                <td>{{ f.channel }}</td>
+                <td>{{ f.product }}</td>
+                <td><span class="rating-badge">★ {{ f.rating || 'N/A' }}</span></td>
+                <td class="feedback-text-cell">{{ f.feedbackText }}</td>
+                <td>
+                  <span class="badge" [ngClass]="f.processingStatus === 'STORED' ? 'badge-success' : 'badge-warn'">
+                    {{ f.processingStatus }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar" *ngIf="!loadingFeedback && feedbackTotalPages > 1">
+          <button class="btn btn-sm btn-secondary" (click)="loadFeedback(feedbackPage - 1)" [disabled]="feedbackPage === 0">
+            ← Previous
+          </button>
+          <span class="page-indicator">Page {{ feedbackPage + 1 }} of {{ feedbackTotalPages }} ({{ feedbackTotalElements }} items)</span>
+          <button class="btn btn-sm btn-secondary" (click)="loadFeedback(feedbackPage + 1)" [disabled]="feedbackPage >= feedbackTotalPages - 1">
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+feedback_id,feedback_date,channel,product,rating,customer_segment,region,feedback_text
+a1111111-1111-1111-1111-111111111101,2026-11-01,Mobile App,Checking Account,5,Retail,North,The biometric login and instant money transfer are incredibly smooth and fast.
+a1111111-1111-1111-1111-111111111102,2026-11-01,Web Portal,Credit Card,4,Retail,East,Statement downloads work well, but navigating reward point redemption could be clearer.
+a1111111-1111-1111-1111-111111111103,2026-11-02,Branch,Mortgage,2,Wealth,West,Waited over 45 minutes for my mortgage advisor despite having a scheduled appointment.
+a1111111-1111-1111-1111-111111111104,2026-11-02,Call Center,Personal Loan,1,Retail,South,Representative placed me on hold for 20 minutes and then the call disconnected.
+a1111111-1111-1111-1111-111111111105,2026-11-03,Mobile App,Savings Account,5,SME,North,High yield savings account interest rate is competitive and auto-save feature is fantastic.

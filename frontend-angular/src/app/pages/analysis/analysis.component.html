@@ -1,0 +1,223 @@
+<div class="analysis-container">
+  <div class="page-header">
+    <div class="breadcrumbs">
+      <span>AI Intelligence</span> / <span>Gemini Analysis</span>
+    </div>
+    <h1>Gemini Feedback Analysis</h1>
+    <p class="subtitle">Extract structured intelligence (sentiment, category, theme, emotion, priority, resolving department) using Google Gemini 2.5 Flash.</p>
+  </div>
+
+  <!-- Success Toast -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    <span>✓ {{ successMessage }}</span>
+  </div>
+
+  <!-- Error Alert -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <span>✕ {{ errorMessage }}</span>
+  </div>
+
+  <!-- Controls Card -->
+  <div class="card controls-card">
+    <h2>Analysis Configuration</h2>
+    <div class="form-grid">
+      <!-- Batch Selector / Input -->
+      <div class="form-group">
+        <label for="batchSelect">Select Uploaded Batch</label>
+        <select
+          id="batchSelect"
+          class="form-control"
+          [(ngModel)]="batchId"
+          (change)="onBatchChange()"
+          [disabled]="isAnalyzing"
+        >
+          <option value="" disabled>-- Select a batch --</option>
+          <option *ngFor="let b of availableBatches" [value]="b.batchId">
+            {{ b.sourceFileName }} ({{ b.totalRows }} rows, {{ b.status }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Batch ID Manual Input -->
+      <div class="form-group">
+        <label for="batchIdInput">Or Enter Batch ID (UUID)</label>
+        <input
+          id="batchIdInput"
+          type="text"
+          class="form-control font-mono"
+          placeholder="e.g. 81a9f18e-4d5d-465a-ab4d-735c29469234"
+          [(ngModel)]="batchId"
+          (blur)="onBatchChange()"
+          [disabled]="isAnalyzing"
+        />
+      </div>
+
+      <!-- Limit Input -->
+      <div class="form-group form-group-sm">
+        <label for="limitInput">Analysis Limit</label>
+        <input
+          id="limitInput"
+          type="number"
+          min="1"
+          max="100"
+          class="form-control"
+          [(ngModel)]="limit"
+          [disabled]="isAnalyzing"
+        />
+      </div>
+    </div>
+
+    <div class="controls-actions">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="reanalyze" [disabled]="isAnalyzing" />
+        <span>Re-analyze existing records (creates new version, archives history)</span>
+      </label>
+
+      <div class="btn-group">
+        <button
+          class="btn btn-secondary"
+          (click)="loadExistingAnalyses()"
+          [disabled]="!batchId || isAnalyzing || isGeneratingEmbeddings || isLoadingExisting"
+        >
+          {{ isLoadingExisting ? 'Loading...' : 'Load Existing Analyses' }}
+        </button>
+
+        <button
+          class="btn btn-primary"
+          (click)="runBatchAnalysis()"
+          [disabled]="!batchId || isAnalyzing || isGeneratingEmbeddings"
+        >
+          <span class="spinner-sm" *ngIf="isAnalyzing"></span>
+          {{ isAnalyzing ? 'Analyzing via Gemini...' : 'Run Batch Analysis' }}
+        </button>
+
+        <button
+          class="btn btn-accent"
+          (click)="generateBatchEmbeddings()"
+          [disabled]="!batchId || isAnalyzing || isGeneratingEmbeddings"
+        >
+          <span class="spinner-sm" *ngIf="isGeneratingEmbeddings"></span>
+          {{ isGeneratingEmbeddings ? 'Generating Vectors...' : '📐 Generate Vector Embeddings' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State for Embeddings -->
+  <div class="card loading-card" *ngIf="isGeneratingEmbeddings">
+    <div class="spinner"></div>
+    <div class="loading-label">Generating 768-dimensional PGVector embeddings via gemini-embedding-001...</div>
+  </div>
+
+  <!-- Embeddings Run Summary Card -->
+  <div class="card summary-card embedding-summary-card" *ngIf="lastEmbeddingSummary">
+    <div class="summary-header">
+      <h3>PGVector Embedding Run Summary</h3>
+      <span class="badge badge-success">Model: gemini-embedding-001 (768-dim)</span>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="metric-label">Total Requested</div>
+        <div class="metric-val">{{ lastEmbeddingSummary.totalRequested }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Generated & Stored</div>
+        <div class="metric-val text-success">{{ lastEmbeddingSummary.generatedCount }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Skipped (Current)</div>
+        <div class="metric-val text-info">{{ lastEmbeddingSummary.skippedCount }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Failed</div>
+        <div class="metric-val" [class.text-error]="lastEmbeddingSummary.failedCount > 0">{{ lastEmbeddingSummary.failedCount }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress / Summary Card -->
+  <div class="card summary-card" *ngIf="lastBatchSummary">
+    <h3>Batch Run Execution Summary</h3>
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="metric-label">Requested Limit</div>
+        <div class="metric-val">{{ lastBatchSummary.totalRequested }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Analyzed by Gemini</div>
+        <div class="metric-val text-success">{{ lastBatchSummary.analyzedCount }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Skipped (Cached / Current)</div>
+        <div class="metric-val text-info">{{ lastBatchSummary.skippedCount }}</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Failed</div>
+        <div class="metric-val text-error">{{ lastBatchSummary.failedCount }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="card loading-card" *ngIf="isAnalyzing || isLoadingExisting">
+    <div class="spinner"></div>
+    <div class="loading-label">
+      {{ isAnalyzing ? 'Invoking Gemini 2.5 Flash with structured schema validation...' : 'Loading analyses...' }}
+    </div>
+  </div>
+
+  <!-- Results Grid -->
+  <div class="card results-card" *ngIf="!isAnalyzing && !isLoadingExisting">
+    <div class="card-header">
+      <h2>Structured AI Intelligence Results</h2>
+      <div class="result-count">Total Active Records: <strong>{{ analyses.length }}</strong></div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="analyses.length === 0">
+      <div class="empty-icon">🤖</div>
+      <h3>No Gemini Analyses Available</h3>
+      <p>Select a batch and click "Run Batch Analysis" to extract structured intelligence from feedback records.</p>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="analyses.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Sentiment</th>
+            <th>Category</th>
+            <th>Theme</th>
+            <th>Emotion</th>
+            <th>Priority</th>
+            <th>Resolving Department</th>
+            <th>One-Sentence Summary</th>
+            <th class="text-right">Confidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of analyses">
+            <td>
+              <span class="badge" [ngClass]="getSentimentClass(item.sentiment)">
+                {{ item.sentiment }}
+              </span>
+            </td>
+            <td class="font-medium">{{ item.category }}</td>
+            <td><code>{{ item.theme }}</code></td>
+            <td>{{ item.emotion }}</td>
+            <td>
+              <span class="badge" [ngClass]="getPriorityClass(item.priority)">
+                {{ item.priority }}
+              </span>
+            </td>
+            <td>{{ item.department }}</td>
+            <td class="summary-cell">{{ item.shortSummary }}</td>
+            <td class="text-right font-mono font-medium">
+              {{ (item.confidenceScore * 100).toFixed(0) }}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

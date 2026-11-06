@@ -1,0 +1,6 @@
+feedback_id,feedback_date,channel,product,rating,customer_segment,region,feedback_text
+c3333333-3333-3333-3333-333333333301,2026-11-01,Mobile App,Auto Loan,4,Retail,East,Fast loan approval process on the app.
+c3333333-3333-3333-3333-333333333302,2026-11-02,Mobile App,Auto Loan,8,Retail,East,Invalid rating value of 8.
+c3333333-3333-3333-3333-333333333303,invalid-date,Branch,Mortgage,2,Wealth,West,Date format is completely unparseable.
+c3333333-3333-3333-3333-333333333304,2026-11-03,,Savings,3,Retail,North,Channel column is missing or empty.
+c3333333-3333-3333-3333-333333333305,2026-11-03,Web Portal,Credit Card,5,Retail,South,

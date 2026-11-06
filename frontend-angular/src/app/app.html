@@ -1,0 +1,25 @@
+<div class="app-layout">
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <a routerLink="/dashboard" class="brand-link">
+          <span class="brand-icon">⚡</span>
+          <span class="brand-title">Customer Feedback Intelligence</span>
+          <span class="phase-tag">Phase 7</span>
+        </a>
+      </div>
+      <nav class="nav-links">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">Dashboard</a>
+        <a routerLink="/data-operations/upload" routerLinkActive="active" class="nav-item">Upload CSV</a>
+        <a routerLink="/data-operations/batches" routerLinkActive="active" class="nav-item">Batch Monitor</a>
+        <a routerLink="/analysis" routerLinkActive="active" class="nav-item">AI Analysis</a>
+        <a routerLink="/semantic-search" routerLinkActive="active" class="nav-item">Semantic Search</a>
+        <a routerLink="/copilot" routerLinkActive="active" class="nav-item">Copilot</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</div>
