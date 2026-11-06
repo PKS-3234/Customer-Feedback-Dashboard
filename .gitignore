@@ -46,3 +46,8 @@ frontend-angular/*.log
 logs/
 *.log
 tmp/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
